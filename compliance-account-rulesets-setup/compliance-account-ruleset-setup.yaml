@@ -7,9 +7,9 @@
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
-# or in the "license" file accompanying this file. This file is distributed 
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
-# express or implied. See the License for the specific language governing 
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
 
@@ -25,12 +25,17 @@ Parameters:
   LambdaRuleIAMRoleARN:
     Type: String
     Description: IAM Role used by Lambda
+  EmailAddressForComplianceNotifications:
+    ConstraintDescription: Enter email address to which notifications will be sent
+    Description: Email address to which notifications will be sent.
+    Type: String
+    Default: ''
 
 Resources:
 
 #
 # BEGINNING OF THE RESOURCES SECTION TO BE ADAPTED TO YOUR NEEDS
-# Modify your rule set here (sample below). Each new Custom Config rule of the ruleSet needs 1) Lambda Function and 2) Lambda Permission       
+# Modify your rule set here (sample below). Each new Custom Config rule of the ruleSet needs 1) Lambda Function and 2) Lambda Permission
 # For managed rules, the configuration is to be done in application-account-setup.yaml
 #
 
@@ -39,7 +44,7 @@ Resources:
     Properties:
       TemplateURL: !Join ['/', ['https://s3.amazonaws.com', !Ref SourceLambdaBucket, 'compliance-account-rule-lambda-setup.yaml']]
       Parameters:
-        RuleSetName: SecurityEpic1-Identity_and_Access_Management                      
+        RuleSetName: SecurityEpic1-Identity_and_Access_Management
         SourceLambdaBucket: !Ref SourceLambdaBucket
         LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
 
@@ -48,7 +53,7 @@ Resources:
     Properties:
       TemplateURL: !Join ['/', ['https://s3.amazonaws.com', !Ref SourceLambdaBucket, 'compliance-account-rule-lambda-setup.yaml']]
       Parameters:
-        RuleSetName: SecurityEpic2-Logging_and_Monitoring             
+        RuleSetName: SecurityEpic2-Logging_and_Monitoring
         SourceLambdaBucket: !Ref SourceLambdaBucket
         LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
 
@@ -57,7 +62,7 @@ Resources:
     Properties:
       TemplateURL: !Join ['/', ['https://s3.amazonaws.com', !Ref SourceLambdaBucket, 'compliance-account-rule-lambda-setup.yaml']]
       Parameters:
-        RuleSetName: SecurityEpic3-Infrastructure_Security     
+        RuleSetName: SecurityEpic3-Infrastructure_Security
         SourceLambdaBucket: !Ref SourceLambdaBucket
         LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
 
@@ -69,13 +74,13 @@ Resources:
         RuleSetName: SecurityEpic4-Data_Protection
         SourceLambdaBucket: !Ref SourceLambdaBucket
         LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
-        
+
   # CreateRRuleStack:
     # Type: AWS::CloudFormation::Stack
     # Properties:
       # TemplateURL: !Join ['/', ['https://s3.amazonaws.com', !Ref SourceLambdaBucket, 'compliance-account-rule-lambda-setup.yaml']]
       # Parameters:
-        # RuleSetName: SecurityEpic6-Resilience              
+        # RuleSetName: SecurityEpic6-Resilience
         # SourceLambdaBucket: !Ref SourceLambdaBucket
         # LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
 
@@ -91,3 +96,5 @@ Resources:
         RuleSetName: SecurityEpic7-Compliance_Validation
         SourceLambdaBucket: !Ref SourceLambdaBucket
         LambdaRuleRoleARN: !Ref LambdaRuleIAMRoleARN
+        CreateSnsTopicForComplianceNotifications: "Yes"
+        EmailAddressForComplianceNotifications: !Ref EmailAddressForComplianceNotifications

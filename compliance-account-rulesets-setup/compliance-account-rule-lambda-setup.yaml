@@ -7,9 +7,9 @@
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
-# or in the "license" file accompanying this file. This file is distributed 
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
-# express or implied. See the License for the specific language governing 
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
 
@@ -34,8 +34,50 @@ Parameters:
     ConstraintDescription: Enter Role ARN to be attached to the Lambda
     Description: Must be full ARN of the IAM Role
     Type: String
-    
-Resources:    
+  CreateSnsTopicForComplianceNotifications:
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
+    Description: Determines whether to create an SNS topic for notifications
+    Type: String
+  EmailAddressForComplianceNotifications:
+    ConstraintDescription: Enter email address to which notifications will be sent
+    Description: Email address to which notifications will be sent
+    Type: String
+    Default: ''
+
+Conditions:
+  ShouldCreateSnsTopicForComplianceNotifications: !Equals [!Ref CreateSnsTopicForComplianceNotifications, 'Yes']
+  ShouldCreateSnsTopicForComplianceNotificationsSubscription: !And
+    - !Condition ShouldCreateSnsTopicForComplianceNotifications
+    - !Not [!Equals [!Ref EmailAddressForComplianceNotifications, '']]
+
+Resources:
+
+  SnsTopic:
+    Type: 'AWS::SNS::Topic'
+    Condition: ShouldCreateSnsTopicForComplianceNotifications
+    Properties:
+      TopicName: consolidated-monitoring
+
+  SnsTopicSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Condition: ShouldCreateSnsTopicForComplianceNotificationsSubscription
+    Properties:
+      Endpoint: !Ref EmailAddressForComplianceNotifications
+      Protocol: email
+      TopicArn: !Ref SnsTopic
+
+  SnsTopicParameter:
+    Type: 'AWS::SSM::Parameter'
+    Condition: ShouldCreateSnsTopicForComplianceNotifications
+    Properties:
+      Name: SntTopicForComplianceNotifications
+      Description: SNS Topic for Notifications
+      Type: String
+      Value: !Ref SnsTopic
+
   RuleSetRuleLambda:
     Type: 'AWS::Lambda::Function'
     Properties:

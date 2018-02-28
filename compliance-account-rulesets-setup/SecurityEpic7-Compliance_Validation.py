@@ -19,9 +19,6 @@ import time
 from datetime import datetime
 import os
 
-# DEFINE SNS TOPIC
-SNS_TOPIC_ARN = ''
-
 # DEFINE CLOUDFORMATION S3 LOCATION
 # This controls enables the Compliance Validation of the Current deployment by verifying if the latest CFn template is deployed in the Application account. Add the cfn file in a specific bucket in the Compliance Account.
 CFN_APP_RULESET_STACK_NAME = ''
@@ -44,13 +41,13 @@ def get_sts_session(event, rolename):
         botocore_session=None, 
         profile_name=None)
 
-def send_results_to_sns(result_detail, accountID, timestamp):
-    region = (SNS_TOPIC_ARN.split("sns:", 1)[1]).split(":", 1)[0]
+def send_results_to_sns(sns_topic_arn, result_detail, accountID, timestamp):
+    region = (sns_topic_arn.split("sns:", 1)[1]).split(":", 1)[0]
     client = boto3.client('sns', region_name=region)
     result_detail = json.dumps(result_detail, default=datetime_handler)
     messagejson = json.dumps({'default': result_detail})
     client.publish(
-        TopicArn=SNS_TOPIC_ARN,
+        TopicArn=sns_topic_arn,
         Subject="Non-compliant resource detected in " + accountID + " at " + timestamp,
         Message=messagejson,
         MessageStructure='json'
@@ -136,7 +133,9 @@ def lambda_handler(event, context):
 
     config = STS_SESSION.client('config')
     dynamodb = boto3.client('dynamodb')
-    
+
+    sns_topic_arn = boto3.client('ssm').get_parameter(Name='SntTopicForComplianceNotifications')['Parameter']['Value']
+
     config_all_rules = config.describe_config_rules()
     # print(config_all_rules)
 
@@ -197,9 +196,9 @@ def lambda_handler(event, context):
             
             # print(SNS_TOPIC_ARN)
             # print(ResultIdentifiers['ComplianceType'])
-            
-            if SNS_TOPIC_ARN != "" and ResultIdentifiers['ComplianceType']=="NON_COMPLIANT":
-                send_results_to_sns(ResultIdentifiers, invoking_event['awsAccountId'], timestamp_now)
+
+            if sns_topic_arn != "" and ResultIdentifiers['ComplianceType']=="NON_COMPLIANT":
+                send_results_to_sns(sns_topic_arn, ResultIdentifiers, invoking_event['awsAccountId'], timestamp_now)
         
         # Update the DynamoDB Status
         UpdateExpressionValue = "set RecordedInDDBTimestamp =:t, LastResultRecordedTime = :lrrt, AccountID = :a, RuleName =:n, ComplianceType =:c"
